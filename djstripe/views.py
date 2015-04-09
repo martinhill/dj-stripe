@@ -24,8 +24,8 @@ from .mixins import PaymentsContextMixin, SubscriptionMixin
 from .models import CurrentSubscription
 from .models import Customer
 from .models import Event
+from .models import Plan
 from .models import EventProcessingException
-from .settings import PLAN_LIST
 from .settings import CANCELLATION_AT_PERIOD_END
 from .settings import subscriber_request_callback
 from .settings import PRORATION_POLICY_FOR_UPGRADES
@@ -51,7 +51,7 @@ class AccountView(LoginRequiredMixin, SelectRelatedMixin, TemplateView):
             context['subscription'] = customer.current_subscription
         except CurrentSubscription.DoesNotExist:
             context['subscription'] = None
-        context['plans'] = PLAN_LIST
+        context['plans'] = Plan.objects.all()
         return context
 
 
@@ -134,6 +134,11 @@ class SubscribeFormView(LoginRequiredMixin, FormValidMessageMixin, SubscriptionM
     success_url = reverse_lazy("djstripe:history")
     form_valid_message = "You are now subscribed!"
 
+    def get_context_data(self, **kwargs):
+        context = super(SubscribeFormView, self).get_context_data(**kwargs)
+        context['plans'] = Plan.objects.all()
+        return context
+
     def post(self, request, *args, **kwargs):
         """
         Handles POST requests, instantiating a form instance with the passed
@@ -174,6 +179,7 @@ class ChangePlanView(LoginRequiredMixin, FormValidMessageMixin, SubscriptionMixi
                 # then we force the proration of his current plan and use it towards the upgraded plan,
                 # no matter what PRORATION_POLICY is set to.
                 if PRORATION_POLICY_FOR_UPGRADES:
+                    # TODO: Needs refactor
                     current_subscription_amount = customer.current_subscription.amount
                     selected_plan_name = form.cleaned_data["plan"]
                     selected_plan = next(
@@ -190,7 +196,7 @@ class ChangePlanView(LoginRequiredMixin, FormValidMessageMixin, SubscriptionMixi
                     else:
                         customer.subscribe(selected_plan_name)
                 else:
-                    customer.subscribe(form.cleaned_data["plan"])
+                    customer.subscribe(form.cleaned_data.get("plan"))
             except stripe.StripeError as e:
                 self.error = e.message
                 return self.form_invalid(form)

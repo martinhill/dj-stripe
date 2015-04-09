@@ -8,8 +8,10 @@
 """
 
 from django import forms
+from .models import Plan
 
-from .settings import PLAN_CHOICES
+
+PLAN_CHOICES = [(plan.stripe_id, plan.name) for plan in Plan.objects.all()]
 
 
 class PlanForm(forms.Form):
