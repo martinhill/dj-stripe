@@ -69,6 +69,7 @@ Add the context processor to your ``TEMPLATE_CONTEXT_PROCESSORS``:
 
     TEMPLATE_CONTEXT_PROCESSORS +=(
         'djstripe.context_processors.djstripe_settings',
+        'django.core.context_processors.request',
     )
 
 Add your stripe keys:
@@ -77,29 +78,6 @@ Add your stripe keys:
 
     STRIPE_PUBLIC_KEY = os.environ.get("STRIPE_PUBLIC_KEY", "<your publishable test key>")
     STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "<your secret test key>")
-
-Add some payment plans:
-
-.. code-block:: python
-
-    DJSTRIPE_PLANS = {
-        "monthly": {
-            "stripe_plan_id": "pro-monthly",
-            "name": "Web App Pro ($24.99/month)",
-            "description": "The monthly subscription plan to WebApp",
-            "price": 2499,  # $24.99
-            "currency": "usd",
-            "interval": "month"
-        },
-        "yearly": {
-            "stripe_plan_id": "pro-yearly",
-            "name": "Web App Pro ($199/year)",
-            "description": "The annual subscription plan to WebApp",
-            "price": 19900,  # $199.00
-            "currency": "usd",
-            "interval": "year"
-        }
-    }
 
 Add to the urls.py:
 
@@ -114,8 +92,6 @@ Run the commands::
     python manage.py migrate  # if you are using South
     
     python manage.py djstripe_init_customers
-    
-    python manage.py djstripe_init_plans
 
 If you haven't already, add JQuery and the Bootstrap 3.0.0 JS and CSS to your base template:
 

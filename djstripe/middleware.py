@@ -2,6 +2,7 @@
 from django.conf import settings
 from django.core.urlresolvers import resolve
 from django.shortcuts import redirect
+from .models import Customer
 
 from .utils import subscriber_has_active_subscription
 from .settings import subscriber_request_callback
@@ -18,7 +19,6 @@ DJSTRIPE_SUBSCRIPTION_REDIRECT = getattr(
     "DJSTRIPE_SUBSCRIPTION_REDIRECT",
     "djstripe:subscribe"
 )
-
 
 # So we don't have crazy long lines of code
 EXEMPT = list(DJSTRIPE_SUBSCRIPTION_REQUIRED_EXCEPTION_URLS)

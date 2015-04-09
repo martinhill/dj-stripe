@@ -23,7 +23,8 @@ from . import settings as app_settings
 from . import views
 
 
-urlpatterns = patterns("",
+urlpatterns = patterns(
+    "",
 
     # HTML views
     url(
