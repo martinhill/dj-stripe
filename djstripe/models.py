@@ -40,10 +40,8 @@ if PY3:
     unicode = str
 
 
-def get_interval_by_stripe_id(stripe_id):
-    plan = Plan.objects.get(stripe_id=stripe_id)
-
-    return plan.interval
+def plan_from_stripe_id(stripe_id):
+    return Plan.objects.get(stripe_id=stripe_id)
 
 
 def convert_tstamp(response, field_name=None):
@@ -491,7 +489,7 @@ class Customer(StripeObject):
         if sub:
             try:
                 sub_obj = self.current_subscription
-                sub_obj.plan = get_interval_by_stripe_id(sub.plan.id)
+                sub_obj.plan = sub.plan.id
                 sub_obj.current_period_start = convert_tstamp(
                     sub.current_period_start
                 )
@@ -508,7 +506,7 @@ class Customer(StripeObject):
             except CurrentSubscription.DoesNotExist:
                 sub_obj = CurrentSubscription.objects.create(
                     customer=self,
-                    plan=get_interval_by_stripe_id(sub.plan.id),
+                    plan=sub.plan.id,
                     current_period_start=convert_tstamp(
                         sub.current_period_start
                     ),
@@ -541,14 +539,14 @@ class Customer(StripeObject):
 
     def update_plan_quantity(self, quantity, charge_immediately=False):
         self.subscribe(
-            plan=get_interval_by_stripe_id(
+            plan=plan_from_stripe_id(
                 self.stripe_customer.subscription.plan.id
             ),
             quantity=quantity,
             charge_immediately=charge_immediately
         )
 
-    def subscribe(self, stripe_plan_id, quantity=1, trial_days=None,
+    def subscribe(self, plan, quantity=1, trial_days=None,
                   charge_immediately=True, prorate=PRORATION_POLICY):
         cu = self.stripe_customer
         """
@@ -556,32 +554,25 @@ class Customer(StripeObject):
         for the key trial_period_days.
         """
 
-        plan_object = Plan.objects.get(stripe_id=stripe_plan_id)
-
-        if plan_object.trial_period_days:
-            trial_days = plan_object.trial_period_days
+        trial_days = plan.trial_period_days
 
         if trial_days:
             resp = cu.update_subscription(
-                plan=plan_object.stripe_id,
+                plan=plan.stripe_id,
                 trial_end=timezone.now() + datetime.timedelta(days=trial_days),
                 prorate=prorate,
                 quantity=quantity
             )
         else:
             resp = cu.update_subscription(
-                plan=plan_object.stripe_id,
+                plan=plan.stripe_id,
                 prorate=prorate,
                 quantity=quantity
             )
         self.sync_current_subscription()
         if charge_immediately:
             self.send_invoice()
-        subscription_made.send(
-            sender=self,
-            plan=stripe_plan_id,
-            stripe_response=resp
-        )
+        subscription_made.send(sender=self, plan=plan.stripe_id, stripe_response=resp)
 
     def charge(self, amount, currency="usd", description=None, send_receipt=True):
         """
@@ -677,7 +668,7 @@ class CurrentSubscription(TimeStampedModel):
         Returns current subscription plan name
         """
         plan_object = Plan.objects.get(
-            interval=self.plan,
+            name=self.plan,
             amount=self.amount
         )
         return plan_object.name
@@ -786,7 +777,7 @@ class Invoice(StripeObject):
             invoice.period_end = period_end
 
             if item.get("plan"):
-                plan = get_interval_by_stripe_id(item["plan"]["id"])
+                plan = item["plan"]["id"]
             else:
                 plan = ""
 
