@@ -971,6 +971,7 @@ class Plan(StripeObject):
                                  verbose_name="Amount (per period)",
                                  null=False)
     trial_period_days = models.IntegerField(null=True)
+    image = models.ImageField(upload_to='djstripe/plans', null=True, blank=True)
 
     def __str__(self):
         return self.name
