@@ -151,7 +151,7 @@ class SubscribeFormView(LoginRequiredMixin, FormValidMessageMixin, SubscriptionM
                 customer, created = Customer.get_or_create(
                     subscriber=subscriber_request_callback(self.request))
                 customer.update_card(self.request.POST.get("stripe_token"))
-                customer.subscribe(form.cleaned_data["plan"])
+                customer.subscribe(Plan.objects.get(stripe_id=form.cleaned_data["plan"]))
             except stripe.StripeError as e:
                 # add form error here
                 self.error = e.args[0]
@@ -222,9 +222,9 @@ class CancelSubscriptionView(LoginRequiredMixin, SubscriptionMixin, FormView):
         if current_subscription.status == current_subscription.STATUS_CANCELLED:
             # If no pro-rate, they get kicked right out.
             messages.info(self.request, "Your subscription is now cancelled.")
-            # logout the user
-            logout(self.request)
-            return redirect("home")
+            # don't logout the user
+            # logout(self.request)
+            # return redirect("home")
         else:
             # If pro-rate, they get some time to stay.
             messages.info(self.request, "Your subscription status is now '{status}' until '{period_end}'".format(
