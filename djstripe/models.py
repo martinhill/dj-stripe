@@ -667,10 +667,7 @@ class CurrentSubscription(TimeStampedModel):
         """
         Returns current subscription plan name
         """
-        plan_object = Plan.objects.get(
-            name=self.plan,
-            amount=self.amount
-        )
+        plan_object = Plan.objects.get(stripe_id=self.plan)
         return plan_object.name
 
     def status_display(self):
